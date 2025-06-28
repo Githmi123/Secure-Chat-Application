@@ -30,19 +30,22 @@ public class client {
 			   int choice =Integer.parseInt(scanner.nextLine());
 			   
 			   if (choice ==1) {
-				   token=AuthHandler.login(scanner.out.in);
+				   token=AuthHandler.login(scanner,out,in);
+			   }
+			   else if (choice ==2) {
+				   token=AuthHandler.register(scanner,out,in);
 			   }
 		   }
-	   }
-	   
-	   
-	   
-	   
-	  
-	   
-	   
-	   
-	   
-	   
+		   
+		   System.out.println("Authentication Completed ");
+		   System.out.println("Your Public Key Fingerprint:"+ CryptoUtils.getPublicKeyFingerprint());
+		   
+		   Thread receiver =new Thread (new MessageReceiver(in));
+		   receiver.start();
+		   
+		   MessageSender.sendLoop(scanner, out, token);
+	   } catch (IOException e) {
+		   System.err.println("Error:"+e.getMessage());
+	   }   
    }
 }
