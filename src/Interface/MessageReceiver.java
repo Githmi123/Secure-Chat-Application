@@ -1,4 +1,6 @@
-package Interface;
+package src.Interface;
+
+import crypto.CryptoUtils;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -23,10 +25,10 @@ public class MessageReceiver implements Runnable {
 				String encrypted =parts[2];
 				String signature= parts[3];
 				
-				String decrypted = CryptoUtils.decryptMessage(encrypted);
-                boolean verified = CryptoUtils.verifySignature(decrypted, signature, sender);
+//				String decrypted = CryptoUtils.decryptMessage(encrypted); //////////uncomment////////////////
+//                boolean verified = CryptoUtils.verifySignature(decrypted, signature, sender); //////////uncomment////////////////
                 
-                System.out.println("\n[" + sender + "]: " + decrypted + (verified ? "Not tampered" : "Tampered"));
+//                System.out.println("\n[" + sender + "]: " + decrypted + (verified ? "Not tampered" : "Tampered")); //////////uncomment////////////////
                 System.out.print("You: ");  
 			}
 		} catch (IOException e) {System.err.println("Disconnected from server.");}

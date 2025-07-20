@@ -1,3 +1,5 @@
+package server;
+
 import java.io.*;
 import java.util.*;
 import org.bouncycastle.crypto.generators.BCrypt;
@@ -6,8 +8,26 @@ import java.security.SecureRandom;
 public class UserAuthManager {
     private static final String USER_FILE = "users.txt";
 
+    public UserAuthManager(){
+        System.out.println("UserAuthManager");
+        try{
+            File file = new File(USER_FILE);
+            if(!file.exists()){
+                file.createNewFile();
+                System.out.println("New file created to store user login data ...");
+            }
+        } catch (Exception e) {
+            System.out.println("An error occured");
+            e.printStackTrace();
+        }
+    }
+
     public boolean registerUser(String username, String password, String publicKey) {
-        if (userExists(username)) return false;
+        if (userExists(username)){
+            System.out.println("User exists");
+            return false;
+        }
+        System.out.println("Registering new user...");
 
         byte[] salt = generateSalt();
         byte[] hashed = BCrypt.generate(password.getBytes(), salt, 12);
@@ -35,6 +55,8 @@ public class UserAuthManager {
                     return Arrays.equals(storedHash, providedHash);
                 }
             }
+            System.out.println("Finished login");
+
         } catch (IOException e) {
             e.printStackTrace();
         }
@@ -55,6 +77,8 @@ public class UserAuthManager {
     }
 
     private boolean userExists(String username) {
+        System.out.println("Checking if user exists ...");
+
         try (BufferedReader br = new BufferedReader(new FileReader(USER_FILE))) {
             String line;
             while ((line = br.readLine()) != null) {
