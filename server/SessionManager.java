@@ -1,3 +1,5 @@
+package server;
+
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -11,6 +13,7 @@ public class SessionManager {
     }
 
     public boolean isValidSession(String username, String token) {
+        System.out.printf("Checking validity ...");
         return token.equals(sessionTokens.get(username));
     }
 

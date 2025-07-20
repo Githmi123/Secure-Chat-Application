@@ -1,9 +1,11 @@
 package crypto;
 
+import java.security.SecureRandom;
+import java.util.Base64;
 import java.util.HashSet;
 import java.util.Set;
 
-public class NonceAndTimestampValidator {
+public class NonceAndTimestampManager {
     private static final Set<String> usedNonces = new HashSet<>();
 
     public static boolean isFresh(String nonce, long timestamp){
@@ -14,5 +16,11 @@ public class NonceAndTimestampValidator {
             usedNonces.add(nonce);
         }
         return true;
+    }
+
+    public static String generateNonce(){
+        byte[] nonceBytes = new byte[16];
+        new SecureRandom().nextBytes(nonceBytes);
+        return Base64.getEncoder().encodeToString(nonceBytes);
     }
 }
