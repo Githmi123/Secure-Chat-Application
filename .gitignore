@@ -1,5 +1,7 @@
 .idea/
 *.iml
 /out
+.metadata/
+auth_log.txt
+users.txt
 /keys
-/users.txt
