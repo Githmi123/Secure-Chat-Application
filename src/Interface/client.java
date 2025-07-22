@@ -16,7 +16,6 @@ import java.net.InetAddress;
 import java.net.Socket;
 import java.security.*;
 import java.security.spec.InvalidKeySpecException;
-import java.security.spec.X509EncodedKeySpec;
 import java.util.Base64;
 import java.util.Scanner;
 
@@ -53,20 +52,23 @@ public class client {
 			   
 			   if (choice ==1) {
 				   System.out.println("Trying to log in");
-				    String response = AuthHandler.login(scanner,out,in);
+				   String response = AuthHandler.login(scanner,out,in);
 				   System.out.println("Logged in");
 					serverPubKey = response.split(":")[2];
 				    token = response.split(":")[1];
 
 			   }
 			   else if (choice ==2) {
-				   token= AuthHandler.register(scanner,out,in, publicKey);
+				//    token= AuthHandler.register(scanner,out,in, publicKey);
+				String response = AuthHandler.register(scanner, out, in, publicKey);
+				if (response != null) {
+					serverPubKey = response.split(":")[2];
+					token = response.split(":")[1];
+				}
 			   }
 		   }
 		   
-		   System.out.println("Authentication Completed ");
-//		   System.out.println("Your Public Key Fingerprint:"+ CryptoUtils.getPublicKeyFingerprint());
-		   
+		   System.out.println("Authentication Completed ");	   
 		   Thread receiver =new Thread (new MessageReceiver(in));
 		   receiver.start();
 
@@ -91,11 +93,6 @@ public class client {
 		String message = "AESKEY:" + token + ":" + Base64.getEncoder().encodeToString(encryptedAESKey);
 		System.out.println(message);
 		out.println(message);
-
-//		System.out.println("Enter with whom to chat with: ");
-//		String recipient = scanner.nextLine();
-//		out.println("RECIPIENT:" + recipient);
-
 		MessageSender.sendLoop(scanner, out, token, aesKey, privateKey);
 	}
 }

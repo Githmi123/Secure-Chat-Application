@@ -1,8 +1,10 @@
 package server;
 
 import java.io.*;
+import java.nio.charset.StandardCharsets;
 import java.util.*;
-import org.bouncycastle.crypto.generators.BCrypt;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
 
 public class UserAuthManager {
@@ -23,36 +25,35 @@ public class UserAuthManager {
     }
 
     public boolean registerUser(String username, String password, String publicKey) {
-        if (userExists(username)){
-            System.out.println("User exists");
+        try (BufferedWriter writer = new BufferedWriter(new FileWriter("users.txt", true))) {
+        if (userExists(username)) {
             return false;
         }
-        System.out.println("Registering new user...");
 
         byte[] salt = generateSalt();
-        byte[] hashed = BCrypt.generate(password.getBytes(), salt, 12);
-        String encoded = Base64.getEncoder().encodeToString(salt) + ":" + Base64.getEncoder().encodeToString(hashed);
-
-        try (BufferedWriter bw = new BufferedWriter(new FileWriter(USER_FILE, true))) {
-            bw.write(username + ":" + encoded + ":" + publicKey);
-            bw.newLine();
-            return true;
-        } catch (IOException e) {
+        String hashedPassword = hashPassword(password, salt);
+        String encodedSalt = Base64.getEncoder().encodeToString(salt);
+        writer.write(username + ":" + hashedPassword + ":" + encodedSalt + ":" + publicKey);
+        writer.newLine();
+        return true;
+        } 
+        
+        catch (IOException | NoSuchAlgorithmException e) {
             e.printStackTrace();
-            return false;
         }
+        return false;
     }
 
-    public boolean loginUser(String username, String password) {
+    public boolean loginUser(String username, String password) throws NoSuchAlgorithmException {
         try (BufferedReader br = new BufferedReader(new FileReader(USER_FILE))) {
             String line;
             while ((line = br.readLine()) != null) {
                 String[] parts = line.split(":", 4);
                 if (parts[0].equals(username)) {
-                    byte[] salt = Base64.getDecoder().decode(parts[1]);
-                    byte[] storedHash = Base64.getDecoder().decode(parts[2]);
-                    byte[] providedHash = BCrypt.generate(password.getBytes(), salt, 12);
-                    return Arrays.equals(storedHash, providedHash);
+                    String storedHash = parts[1];
+                    byte[] salt = Base64.getDecoder().decode(parts[2]);
+                    String hashedInput = hashPassword(password, salt);
+                    return storedHash.equals(hashedInput);
                 }
             }
             System.out.println("Finished login");
@@ -95,4 +96,12 @@ public class UserAuthManager {
         new SecureRandom().nextBytes(salt);
         return salt;
     }
+
+   public static String hashPassword(String password, byte[] salt) throws NoSuchAlgorithmException {
+        MessageDigest digest = MessageDigest.getInstance("SHA-256");
+        digest.update(salt);
+        byte[] hash = digest.digest(password.getBytes(StandardCharsets.UTF_8));
+        return Base64.getEncoder().encodeToString(hash);
+}
+
 }

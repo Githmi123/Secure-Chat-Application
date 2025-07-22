@@ -22,17 +22,22 @@ public class AuthHandler {
 		out.println("LOGIN:" + username + ":" + password);
 		out.flush();
 		System.out.println("Not received");
+
         String response = in.readLine();
 		System.out.println("Response: " + response);
         
-		if (response !=null && response.startsWith("SUCCESS")) {
-			System.out.println("Successfull");
-			return response; //return session token
+		if (response == null || response.isBlank() || response.startsWith("FAILED")) {
+    		System.out.println("Login Failed.");
+    		return null;
 		}
-		else {
-			System.out.println("Login Failed:"+response);
-			return null;
+
+		if (response.startsWith("SUCCESS")) {
+			System.out.println("Successful");
+			return response;
 		}
+
+		System.out.println("Unexpected response: " + response);
+		return null;
 	}
 
 	public static String register(Scanner scanner, PrintWriter out, BufferedReader in, PublicKey publicKey) throws IOException {
@@ -44,9 +49,17 @@ public class AuthHandler {
 		String password =scanner.nextLine();
 
 		String encodedPubKey = Base64.getEncoder().encodeToString(publicKey.getEncoded());
+	
 		
-		out.println("REGISTER:"+username+":"+password+":"+encodedPubKey+"\n"); // public key also must be sent
-		String response =in.readLine();
+		String registerMessage = "REGISTER:" + username + ":" + password + ":" + encodedPubKey;
+		System.out.println(registerMessage);
+		out.println(registerMessage);      
+		out.flush();                         
+
+
+		System.out.println("Waiting for server response...");
+		String response = in.readLine();
+		System.out.println("The r=new response: " + response);
 		
 		if (response !=null && response.equals("REGISTERED")) {
 			System.out.println("Registration successful.PLease login.");
