@@ -11,7 +11,6 @@ import java.security.NoSuchAlgorithmException;
 import java.security.PrivateKey;
 import java.security.PublicKey;
 import java.security.spec.InvalidKeySpecException;
-import java.util.Arrays;
 import java.util.Base64;
 
 public class PersistentKeyPair {
@@ -20,8 +19,8 @@ public class PersistentKeyPair {
     private static String PRIV_PATH = null;
 
     public PersistentKeyPair(String username){
-        this.PUB_PATH = "keys/" + username + "_pub.key";
-        this.PRIV_PATH = "keys/" + username + "_priv.key";
+        PUB_PATH = "keys/" + username + "_pub.key";
+        PRIV_PATH = "keys/" + username + "_priv.key";
     }
 
     public KeyPair loadOrCreate() throws IOException, NoSuchAlgorithmException, InvalidKeySpecException {
@@ -30,7 +29,8 @@ public class PersistentKeyPair {
 
         KeyManager keyManager = new KeyManager();
 
-        if(Files.exists(Paths.get("keys")) && Files.isDirectory(Paths.get("keys"))){ // directory exists
+        Path keys = Paths.get("keys");
+        if(Files.exists(keys) && Files.isDirectory(keys)){ // directory exists
             if(pubFile.exists() && privFile.exists()){ // files exists
                 PublicKey pub = KeyExchangeManager.createPublicKey(Files.readString(pubFile.toPath()));
                 PrivateKey priv = KeyExchangeManager.createPrivateKey(Files.readString(privFile.toPath()));
@@ -38,7 +38,7 @@ public class PersistentKeyPair {
             }
         }
         else {
-            Files.createDirectory(Paths.get("keys"));
+            Files.createDirectory(keys);
         }
 
         keyManager.generateKeyPair();

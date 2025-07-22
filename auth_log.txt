@@ -91,3 +91,6 @@
 [Tue Jul 22 16:05:31 IST 2025] [IP: 127.0.0.1] [User: a] Login success. Token: 2fad4b14-2d6d-46fb-b724-dae2216adfa8 HASH=48baad63e45539f18bf7b3a19474f0060ce49a771066cdaed4a0ebb4cffce433
 [Tue Jul 22 16:08:59 IST 2025] [IP: 127.0.0.1] [User: a] Login success. Token: 2fe0a417-5443-4612-9d69-28c430d046e3 HASH=072305c147303f098fc18706d4320e65e81a3ddf97176e3ff09fe69e89063630
 [Tue Jul 22 16:10:14 IST 2025] [IP: 127.0.0.1] [User: a] Login success. Token: 74f4e757-723e-4a54-8aa5-15b869c50e01 HASH=74a93469721ff449fb02086cc3d80edbdb42dcd9ae1fbe7a8654f29a5bfc8f9b
+[Tue Jul 22 20:48:07 IST 2025] [IP: 127.0.0.1] [User: m] Login failed. HASH=d91e413f3765a685ea6beb99a57eb27e82db51f1efdbfad3a24734b800034059
+[Tue Jul 22 20:48:50 IST 2025] [IP: 127.0.0.1] [User: m] Login success. Token: c0271e24-65f9-4fcf-92f8-69f52f25924a HASH=cd4f76bfdc86cd2a72a8f725a4fb60d5cc2de36fafe0115fdb9a29c0d4409cd3
+[Tue Jul 22 20:48:57 IST 2025] [IP: 127.0.0.1] [User: m] Logged out. HASH=52e328af4d7ba8516759fad99af3d0b9d4d96f9c44576dee5319a5b81f2c94f6
