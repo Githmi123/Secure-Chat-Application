@@ -17,6 +17,7 @@ public class Server {
         SessionManager sessionManager = new SessionManager();
 
         KeyManager keyManager = new KeyManager();
+        keyManager.generateKeyPair();
         PrivateKey privateKey = keyManager.getPrivateKey();
         PublicKey publicKey = keyManager.getPublicKey();
 
