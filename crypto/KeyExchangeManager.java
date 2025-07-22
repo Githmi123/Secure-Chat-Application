@@ -4,6 +4,7 @@ import javax.crypto.*;
 import javax.crypto.spec.SecretKeySpec;
 import java.security.*;
 import java.security.spec.InvalidKeySpecException;
+import java.security.spec.PKCS8EncodedKeySpec;
 import java.security.spec.X509EncodedKeySpec;
 import java.util.Base64;
 
@@ -22,9 +23,17 @@ public class KeyExchangeManager {
     }
 
     public static PublicKey createPublicKey(String pubKeyString) throws NoSuchAlgorithmException, InvalidKeySpecException {
+
         byte[] keyBytes = Base64.getDecoder().decode(pubKeyString);
         X509EncodedKeySpec spec = new X509EncodedKeySpec(keyBytes);
         KeyFactory keyFactory = KeyFactory.getInstance("RSA");
         return keyFactory.generatePublic(spec);
+    }
+
+    public static PrivateKey createPrivateKey(String privKeyString) throws NoSuchAlgorithmException, InvalidKeySpecException {
+        byte[] keyBytes = Base64.getDecoder().decode(privKeyString);
+        PKCS8EncodedKeySpec spec = new PKCS8EncodedKeySpec(keyBytes);
+        KeyFactory keyFactory = KeyFactory.getInstance("RSA");
+        return keyFactory.generatePrivate(spec);
     }
 }

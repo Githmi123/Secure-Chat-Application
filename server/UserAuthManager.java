@@ -9,7 +9,6 @@ public class UserAuthManager {
     private static final String USER_FILE = "users.txt";
 
     public UserAuthManager(){
-        System.out.println("UserAuthManager");
         try{
             File file = new File(USER_FILE);
             if(!file.exists()){

@@ -3,6 +3,7 @@ package src.Interface;
 import crypto.CryptoUtils;
 import crypto.KeyExchangeManager;
 import crypto.KeyManager;
+import crypto.PersistentKeyPair;
 
 import javax.crypto.BadPaddingException;
 import javax.crypto.IllegalBlockSizeException;
@@ -37,11 +38,6 @@ public class client {
 	            Scanner scanner = new Scanner(System.in)
 	        ){
 
-		   KeyManager keyManager = new KeyManager();
-		   privateKey = keyManager.getPrivateKey();
-		   publicKey = keyManager.getPublicKey();
-
-
 		   System.out.println("Connected to Secure Chat Server");
 		   
 		   String token=null;
@@ -52,16 +48,21 @@ public class client {
 			   int choice =Integer.parseInt(scanner.nextLine());
 			   
 			   if (choice ==1) {
-				   System.out.println("Trying to log in");
 				    String response = AuthHandler.login(scanner,out,in);
-				   System.out.println("Logged in");
 					serverPubKey = response.split(":")[2];
 				    token = response.split(":")[1];
+
 
 			   }
 			   else if (choice ==2) {
 				   token= AuthHandler.register(scanner,out,in, publicKey);
 			   }
+
+			   String username = AuthHandler.getUsername();
+			   PersistentKeyPair persistentKeyPair = new PersistentKeyPair(username);
+			   KeyPair keyPair = persistentKeyPair.loadOrCreate();
+			   publicKey = keyPair.getPublic();
+			   privateKey = keyPair.getPrivate();
 		   }
 		   
 		   System.out.println("Authentication Completed ");
@@ -83,18 +84,12 @@ public class client {
    }
 
 	private static void messageSend(Scanner scanner, PrintWriter out, String token) throws NoSuchAlgorithmException, InvalidKeySpecException, NoSuchPaddingException, IllegalBlockSizeException, BadPaddingException, InvalidKeyException, InvalidAlgorithmParameterException, SignatureException {
-		System.out.println("Now you can send messages ...");
 		SecretKey aesKey = CryptoUtils.generateAESKey();
 		KeyExchangeManager keyExchangeManager = new KeyExchangeManager();
 		byte[] encryptedAESKey = keyExchangeManager.encryptAESKey(aesKey, keyExchangeManager.createPublicKey(serverPubKey));
 
 		String message = "AESKEY:" + token + ":" + Base64.getEncoder().encodeToString(encryptedAESKey);
-		System.out.println(message);
 		out.println(message);
-
-//		System.out.println("Enter with whom to chat with: ");
-//		String recipient = scanner.nextLine();
-//		out.println("RECIPIENT:" + recipient);
 
 		MessageSender.sendLoop(scanner, out, token, aesKey, privateKey);
 	}

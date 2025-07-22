@@ -6,11 +6,7 @@ public class KeyManager {
     private PrivateKey privateKey;
     private PublicKey publicKey;
 
-    public KeyManager() throws NoSuchAlgorithmException {
-        generateKeyPair();
-    }
-
-    private void generateKeyPair() throws NoSuchAlgorithmException {
+    public void generateKeyPair() throws NoSuchAlgorithmException {
 
         KeyPairGenerator keyGen = KeyPairGenerator.getInstance("RSA");
         keyGen.initialize(2048);

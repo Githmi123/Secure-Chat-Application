@@ -57,23 +57,11 @@ public class ClientHandler implements Runnable {
             String command = reader.readLine();
 
             if ("register".equalsIgnoreCase(command)) {
-                System.out.println("Registering user");
-//                writer.write("Username:\n");
-//                writer.flush();
                 String registerInfo = reader.readLine();
                 String[] parts = registerInfo.split(":", 4);
                 String user = parts[1];
                 String pass = parts[2];
                 String pubKey = parts[3];
-
-//                writer.write("Password:\n");
-//                writer.flush();
-//                String pass = reader.readLine();
-//
-//                writer.write("PublicKey:\n");
-//                writer.flush();
-//                String pubKey = reader.readLine();
-
 
                 if (authManager.registerUser(user, pass, pubKey)) {
                     System.out.println("Registration successful!");
@@ -110,14 +98,12 @@ public class ClientHandler implements Runnable {
                     writer.flush();
                     writer.flush();
                     Logger.logEvent(clientSocket, user, "Login success. Token: " + token);
-                    System.out.println("User successfully logged in");
+//                    System.out.println("User successfully logged in");
 
 
 
                     String message;
                     while(!Objects.equals(message = reader.readLine(), "LOGOUT")){
-                        System.out.println("Receiving messages ...");
-
                         boolean isSessionValid = sessionManager.isValidSession(username, message.split(":")[1]);
                         if(!isSessionValid){
                             System.out.printf("Session invalid");
@@ -125,7 +111,7 @@ public class ClientHandler implements Runnable {
                         }
 
                         if(message.startsWith("AESKEY")){
-                            System.out.println("AES key received ...");
+//                            System.out.println("AES key received ...");
                             KeyExchangeManager keyExchangeManager = new KeyExchangeManager();
                             SecretKey aesKey = keyExchangeManager.decryptAESKey(Base64.getDecoder().decode(message.split(":")[2].getBytes()), privateKey);
                             sessionAESKeys.put(username, aesKey);
@@ -142,7 +128,7 @@ public class ClientHandler implements Runnable {
 
 //                        System.out.println(message);
 
-                        System.out.println("Session valid");
+//                        System.out.println("Session valid");
 
 
 
@@ -192,10 +178,8 @@ public class ClientHandler implements Runnable {
     }
 
     private boolean readMessages(String secureMessage) throws InvalidAlgorithmParameterException, NoSuchPaddingException, IllegalBlockSizeException, NoSuchAlgorithmException, BadPaddingException, InvalidKeyException, SignatureException, IOException, InvalidKeySpecException {
-//        System.out.println("Sec: " + secureMessage);
         String decryptedMessage = CryptoUtils.decrypt(secureMessage.split(":")[2], sessionAESKeys.get(username), Base64.getDecoder().decode(secureMessage.split(":")[3]));
         String userPubKey;
-        System.out.println("Message: " + decryptedMessage);
 
         try (BufferedReader br = new BufferedReader(new FileReader(USER_FILE))) {
             String line;
@@ -236,7 +220,7 @@ public class ClientHandler implements Runnable {
 //        else{
 //            System.out.println("Intended recipient is not online");
 //        }
-        System.out.println(username + " : Decrypted Message " + decryptedMessage);
+        System.out.println(username + " : " + decryptedMessage);
         return true;
     }
 
