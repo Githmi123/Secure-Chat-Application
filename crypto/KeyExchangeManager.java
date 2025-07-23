@@ -10,13 +10,15 @@ import java.util.Base64;
 
 public class KeyExchangeManager {
     public static byte[] encryptAESKey(SecretKey aesKey, PublicKey receiverPublicKey) throws NoSuchPaddingException, NoSuchAlgorithmException, InvalidKeyException, IllegalBlockSizeException, BadPaddingException {
-        Cipher cipher = Cipher.getInstance("RSA");
+        // Cipher cipher = Cipher.getInstance("RSA");
+        Cipher cipher = Cipher.getInstance("RSA/ECB/OAEPWithSHA-256AndMGF1Padding");
         cipher.init(Cipher.ENCRYPT_MODE, receiverPublicKey);
         return cipher.doFinal(aesKey.getEncoded());
     }
 
     public static SecretKey decryptAESKey(byte[] encryptedKey, PrivateKey receiverPrivateKey) throws NoSuchPaddingException, NoSuchAlgorithmException, InvalidKeyException, IllegalBlockSizeException, BadPaddingException {
-        Cipher cipher = Cipher.getInstance("RSA");
+        // Cipher cipher = Cipher.getInstance("RSA");
+        Cipher cipher = Cipher.getInstance("RSA/ECB/OAEPWithSHA-256AndMGF1Padding");
         cipher.init(Cipher.DECRYPT_MODE, receiverPrivateKey);
         byte[] decodedKey = cipher.doFinal(encryptedKey);
         return new SecretKeySpec(decodedKey, 0, decodedKey.length, "AES");

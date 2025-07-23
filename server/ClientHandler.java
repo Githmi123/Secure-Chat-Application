@@ -5,6 +5,7 @@ import crypto.KeyExchangeManager;
 import crypto.NonceAndTimestampManager;
 
 import javax.crypto.BadPaddingException;
+import javax.crypto.Cipher;
 import javax.crypto.IllegalBlockSizeException;
 import javax.crypto.NoSuchPaddingException;
 import javax.crypto.SecretKey;
@@ -14,7 +15,6 @@ import java.security.*;
 import java.security.spec.InvalidKeySpecException;
 import java.util.Base64;
 import java.util.Map;
-import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
 
 public class ClientHandler implements Runnable {
@@ -86,8 +86,25 @@ public void run() {
                     String token = sessionManager.createSession(user);
                     this.username = user;
                     ONLINE_USERS.put(user, this);
-                    String publicKeyString = Base64.getEncoder().encodeToString(publicKey.getEncoded());
-                    writer.write("SUCCESS:" + token + ":" + publicKeyString + "\n");
+                    String pubKeyString = getUserPublicKey(username);
+                    PublicKey clientPublicKey = KeyExchangeManager.createPublicKey(pubKeyString);
+
+                    String serverPublicKeyString = Base64.getEncoder().encodeToString(publicKey.getEncoded());
+
+                    // Cipher cipher = Cipher.getInstance("RSA");
+                    Cipher cipher = Cipher.getInstance("RSA/ECB/OAEPWithSHA-256AndMGF1Padding");
+                    cipher.init(Cipher.ENCRYPT_MODE, clientPublicKey);
+                    byte[] encryptedTokenBytes = cipher.doFinal(token.getBytes());
+                    String encryptedToken = Base64.getEncoder().encodeToString(encryptedTokenBytes);
+
+                    // writer.write("SUCCESS:" + encryptedToken + ":" + pubKeyString + "\n");
+                     writer.write("SUCCESS:" + encryptedToken + ":" + serverPublicKeyString + "\n");
+
+
+                    // String publicKeyString = Base64.getEncoder().encodeToString(publicKey.getEncoded());
+
+                    // writer.write("SUCCESS:" + token + ":" + publicKeyString + "\n");
+
                     writer.flush();
                     Logger.logEvent(clientSocket, user, "Login success. Token: " + token);
                     System.out.println("User successfully logged in");
@@ -180,4 +197,20 @@ public void run() {
         System.out.println(username + " : Decrypted Message " + decryptedMessage);
         return true;
     }
+
+    private String getUserPublicKey(String username) {
+        try (BufferedReader br = new BufferedReader(new FileReader("users.txt"))) {
+            String line;
+            while ((line = br.readLine()) != null) {
+                String[] parts = line.split(":", 4); 
+                if (parts.length == 4 && parts[0].equals(username)) {
+                    return parts[3];
+                }
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        return null; 
+    }
+
 }
