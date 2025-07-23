@@ -2,10 +2,10 @@ package src.Interface;
 
 import crypto.CryptoUtils;
 import crypto.KeyExchangeManager;
-import crypto.KeyManager;
 import crypto.PersistentKeyPair;
 
 import javax.crypto.BadPaddingException;
+import javax.crypto.Cipher;
 import javax.crypto.IllegalBlockSizeException;
 import javax.crypto.NoSuchPaddingException;
 import javax.crypto.SecretKey;
@@ -41,34 +41,41 @@ public class client {
 		   
 		   String token=null;
 		   while (token==null) {
-			   System.out.println("1.Login");
-			   System.out.println("2.Register");
-			   System.out.print("Enter Option:");
-			   int choice =Integer.parseInt(scanner.nextLine());
-			   
-			   if (choice ==1) {
-				   System.out.println("Trying to log in");
-				   String response = AuthHandler.login(scanner,out,in);
-				   System.out.println("Logged in");
-					serverPubKey = response.split(":")[2];
-				    token = response.split(":")[1];
+			System.out.println("1.Login");
+			System.out.println("2.Register");
+			System.out.print("Enter Option:");
+			int choice = Integer.parseInt(scanner.nextLine());
 
+			System.out.print("Enter username: ");
+			String username = scanner.nextLine();
+			AuthHandler.setUsername(username); 
 
-			   }
-			   else if (choice ==2) {
-				//    token= AuthHandler.register(scanner,out,in, publicKey);
-				String response = AuthHandler.register(scanner, out, in, publicKey);
-				if (response != null) {
-					serverPubKey = response.split(":")[2];
-					token = response.split(":")[1];
-				}
-			   }
+			PersistentKeyPair persistentKeyPair = new PersistentKeyPair(username);
+			KeyPair keyPair = persistentKeyPair.loadOrCreate();
+			publicKey = keyPair.getPublic();
+			privateKey = keyPair.getPrivate();
 
-			   String username = AuthHandler.getUsername();
-			   PersistentKeyPair persistentKeyPair = new PersistentKeyPair(username);
-			   KeyPair keyPair = persistentKeyPair.loadOrCreate();
-			   publicKey = keyPair.getPublic();
-			   privateKey = keyPair.getPrivate();
+			String response = null;
+			if (choice == 1) {
+				response = AuthHandler.login(username, scanner, out, in);
+			} else if (choice == 2) {
+				// response = AuthHandler.register(username, scanner, out, in, publicKey);
+				 response = AuthHandler.register(scanner, out, in);
+			}
+
+			if (response != null && response.startsWith("SUCCESS")) {
+				 String[] parts = response.split(":", 3);
+                    String encryptedTokenBase64 = parts[1];
+                    serverPubKey = parts[2];
+
+                    // Cipher cipher = Cipher.getInstance("RSA");
+					Cipher cipher = Cipher.getInstance("RSA/ECB/OAEPWithSHA-256AndMGF1Padding");
+                    cipher.init(Cipher.DECRYPT_MODE, privateKey);
+                    byte[] decryptedTokenBytes = cipher.doFinal(Base64.getDecoder().decode(encryptedTokenBase64));
+                    token = new String(decryptedTokenBytes);
+					System.out.println("Check the token : "+token);
+			}
+
 		   }
 		   
 		   System.out.println("Authentication Completed ");	   
@@ -91,7 +98,6 @@ public class client {
 		SecretKey aesKey = CryptoUtils.generateAESKey();
 		KeyExchangeManager keyExchangeManager = new KeyExchangeManager();
 		byte[] encryptedAESKey = keyExchangeManager.encryptAESKey(aesKey, keyExchangeManager.createPublicKey(serverPubKey));
-
 		String message = "AESKEY:" + token + ":" + Base64.getEncoder().encodeToString(encryptedAESKey);
 		out.println(message);
 		MessageSender.sendLoop(scanner, out, token, aesKey, privateKey);
