@@ -17,7 +17,7 @@ public class MessageSender {
 	public static void sendLoop(Scanner scanner, PrintWriter out, String token, SecretKey aesKey, PrivateKey privateKey) throws InvalidAlgorithmParameterException, NoSuchPaddingException, IllegalBlockSizeException, NoSuchAlgorithmException, BadPaddingException, InvalidKeyException, SignatureException {
 //		CryptoUtils cryptoUtils = new CryptoUtils();
 		while (true) {
-			System.out.print("You:");
+			System.out.print("You(client): ");
 			String plainText = scanner.nextLine();
 			byte[] iv = CryptoUtils.generateIV();
 			String encryptedMessage = CryptoUtils.encrypt(plainText, aesKey, iv);

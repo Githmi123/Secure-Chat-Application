@@ -109,6 +109,8 @@ public void run() {
                     Logger.logEvent(clientSocket, user, "Login success. Token: " + token);
                     System.out.println("User successfully logged in");
 
+                    new Thread(() -> sendConsoleMessages(writer, token)).start();
+
                     String message;
                     while ((message = reader.readLine()) != null && !message.equals("LOGOUT")) {
                         boolean isSessionValid = sessionManager.isValidSession(username, message.split(":")[1]);
@@ -212,5 +214,32 @@ public void run() {
         }
         return null; 
     }
+
+    private void sendConsoleMessages(BufferedWriter writer, String token) {
+        try (BufferedReader console = new BufferedReader(new InputStreamReader(System.in))) {
+            String plain;
+            while (true){
+                 System.out.print("You(server): ");
+                plain = console.readLine();
+
+                if (plain == null) break; 
+
+                SecretKey aesKey = sessionAESKeys.get(username);
+                if (aesKey == null) { System.out.println("AES key not ready."); continue; }
+
+                byte[] iv = CryptoUtils.generateIV();
+                String enc = CryptoUtils.encrypt(plain, aesKey, iv);
+                String sig = Base64.getEncoder().encodeToString(CryptoUtils.sign(plain, privateKey));
+
+                String secure = "MSG:" + token + ":" + enc + ":" +
+                        Base64.getEncoder().encodeToString(iv) + ":" + sig + ":" +
+                        NonceAndTimestampManager.generateNonce() + ":" + System.currentTimeMillis();
+
+                writer.write(secure + "\n");
+                writer.flush();
+            }
+        } catch (Exception e) { System.out.println("Console‑send stopped: " + e); }
+    }
+
 
 }

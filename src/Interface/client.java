@@ -26,6 +26,8 @@ public class client {
    private static PublicKey publicKey;
    private static PrivateKey privateKey;
    private static String serverPubKey;
+
+   private static SecretKey aesKey;
    
    public static void main (String[] args) throws IOException, SignatureException {
 	   InetAddress ipAddress =InetAddress.getLocalHost();
@@ -95,11 +97,20 @@ public class client {
    }
 
 	private static void messageSend(Scanner scanner, PrintWriter out, String token) throws NoSuchAlgorithmException, InvalidKeySpecException, NoSuchPaddingException, IllegalBlockSizeException, BadPaddingException, InvalidKeyException, InvalidAlgorithmParameterException, SignatureException {
-		SecretKey aesKey = CryptoUtils.generateAESKey();
+		aesKey = CryptoUtils.generateAESKey();
 		KeyExchangeManager keyExchangeManager = new KeyExchangeManager();
 		byte[] encryptedAESKey = keyExchangeManager.encryptAESKey(aesKey, keyExchangeManager.createPublicKey(serverPubKey));
 		String message = "AESKEY:" + token + ":" + Base64.getEncoder().encodeToString(encryptedAESKey);
 		out.println(message);
 		MessageSender.sendLoop(scanner, out, token, aesKey, privateKey);
+	}
+
+	public static SecretKey getAESKey() {
+		System.out.println("aes in clinet: " + aesKey);
+		return aesKey;
+	}
+
+	public static String getServerPubKey() {
+		return serverPubKey;
 	}
 }
