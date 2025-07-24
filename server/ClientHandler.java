@@ -176,6 +176,10 @@ public class ClientHandler implements Runnable {
         String plain = CryptoUtils.decrypt(messageInfoParts[2], aes,
                             Base64.getDecoder().decode(messageInfoParts[3]));
         System.out.println(user + " > " + plain);
+        if (plain.equalsIgnoreCase("LOGOUT")) {
+            handleLogout();
+            return;
+        }
     }
 
     public void sendSecure(String plain) throws Exception {
