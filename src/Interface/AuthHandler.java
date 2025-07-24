@@ -15,7 +15,7 @@ import java.util.Scanner;
 
 public class AuthHandler {
 
-	private static String username;
+	// private static String username;
 	private static PublicKey serverPublicKey;
 
 	public static void setServerPublicKey(PublicKey key) {
@@ -24,7 +24,7 @@ public class AuthHandler {
  	
 	public static String login(String username, Scanner scanner, PrintWriter out, BufferedReader in) throws IOException {
 			out.println("login");
-			AuthHandler.setUsername(username);
+			// AuthHandler.setUsername(username);
 	        
 			System.out.print("Password:");
 			String password = scanner.nextLine();
@@ -48,12 +48,11 @@ public class AuthHandler {
 			return null;
 }
 
- public static String register(Scanner scanner, PrintWriter out, BufferedReader in) throws IOException, NoSuchAlgorithmException, InvalidKeySpecException {
+ public static String register(String username,Scanner scanner, PrintWriter out, BufferedReader in) throws IOException, NoSuchAlgorithmException, InvalidKeySpecException {
         out.println("register");
 
-        //System.out.print("Enter Username: ");
-        //username = scanner.nextLine();
-        AuthHandler.setUsername(username);
+        // System.out.print("Username: ");
+        // username = scanner.nextLine();
         System.out.print("Password: ");
         String password = scanner.nextLine();
 
@@ -83,15 +82,15 @@ public class AuthHandler {
 	    out.println("logout");
 	    out.flush();
 	    System.out.println("You have been logged out.");
-	    setUsername(null); // clear static username
+	    // setUsername(null); // clear static username
 	}
  
-	public static String getUsername(){
-		return username;
-	}
+	// public static String getUsername(){
+	// 	return username;
+	// }
 
-	public static void setUsername(String user) {
-		username = user;	
-	}
+	// public static void setUsername(String user) {
+	// 	username = user;	
+	// }
 
 }

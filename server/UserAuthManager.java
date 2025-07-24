@@ -34,6 +34,7 @@ public class UserAuthManager {
     	String decryptedPassword = KeyExchangeManager.decryptPassword(encryptedPasswordBase64, privateKey);
     	try (BufferedWriter writer = new BufferedWriter(new FileWriter("users.txt", true))) {
         if (userExists(username)) {
+            System.out.println("User exists : error");
             return false;
         }
 

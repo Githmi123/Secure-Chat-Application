@@ -1,6 +1,7 @@
 package server;
 
 import crypto.CryptoUtils;
+import crypto.ECDHUtils;
 import crypto.KeyExchangeManager;
 import crypto.NonceAndTimestampManager;
 
@@ -9,10 +10,12 @@ import javax.crypto.Cipher;
 import javax.crypto.IllegalBlockSizeException;
 import javax.crypto.NoSuchPaddingException;
 import javax.crypto.SecretKey;
+
 import java.io.*;
 import java.net.Socket;
 import java.security.*;
 import java.security.spec.InvalidKeySpecException;
+import java.security.spec.X509EncodedKeySpec;
 import java.util.Base64;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -28,8 +31,11 @@ public class ClientHandler implements Runnable {
     private static Map<String, SecretKey> sessionAESKeys = new ConcurrentHashMap<>();
 
     private String username;
-    private String USER_FILE = "users.txt";
 
+    // private BufferedWriter writer;
+    private String         user;
+    private BufferedReader in;
+    private BufferedWriter out;
 
     public ClientHandler(Socket socket, UserAuthManager authManager, SessionManager sessionManager, PrivateKey privateKey, PublicKey publicKey) {
         this.clientSocket = socket;
@@ -39,218 +45,185 @@ public class ClientHandler implements Runnable {
         this.publicKey = publicKey;
     }
 
-    @SuppressWarnings("static-access")
-    @Override
-public void run() {
-    try (
-        BufferedReader reader = new BufferedReader(new InputStreamReader(clientSocket.getInputStream()));
-        BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(clientSocket.getOutputStream()))
-    ) {
-        System.out.println("New thread created for client");
-        String serverPublicKeyString1 = Base64.getEncoder().encodeToString(publicKey.getEncoded());
-        writer.write("SERVER PUBLIC KEY:" + serverPublicKeyString1 + "\n");
-        writer.flush();
+   @Override public void run() {
+        try {
+            in  = new BufferedReader(new InputStreamReader(clientSocket.getInputStream()));
+            out = new BufferedWriter(new OutputStreamWriter(clientSocket.getOutputStream()));
+
+            System.out.println("New thread created for client");
+            String serverPublicKeyString1 = Base64.getEncoder().encodeToString(publicKey.getEncoded());
+            out.write("SERVER PUBLIC KEY:" + serverPublicKeyString1 + "\n");
+            out.flush();
+
+            for (String line; (line = in.readLine()) != null; ) {
+                if (line.equalsIgnoreCase("register")) { handleRegister(); }
+                else if (line.equalsIgnoreCase("login")) { handleLogin();    }
+                else if (line.startsWith("ECDH_INIT"))   { handleECDH(line);  }
+                else if (line.startsWith("MSG"))         { handleMsg(line);   }
+                else if (line.equalsIgnoreCase("LOGOUT")) {handleLogout();}
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        } finally { cleanup(); }
+    }
+
+    private void handleRegister() throws Exception {
+        String userInfo = in.readLine();                
+        String[] infoParts = userInfo.split(":",4);
+        boolean isRegistered = authManager.registerUser(infoParts[1],infoParts[2],infoParts[3]);
+        out.write(isRegistered ? "REGISTERED\n" : "REGISTER_FAILED\n");
+        if(isRegistered){
+            System.out.println("Registration successful!");
+        }
+        else{
+            System.out.println("Registration failed (user exists).");
+        }
+        out.flush();
+    }
+
+    private void handleLogin() throws Exception {
+        System.out.println("User is logging in");
+        String loginInfo = in.readLine(); 
         
-        String command;
-        while ((command = reader.readLine()) != null) {
+        if (loginInfo == null) {
+            System.out.println("Login info not received. Client might have disconnected.");
+            return;
+        }
+        
+        String[] loginInfoParts = loginInfo.split(":",3);
 
-            if ("register".equalsIgnoreCase(command)) {
-                System.out.println("Registering user");
-                String registerInfo = reader.readLine();
-                String[] parts = registerInfo.split(":", 4);
-                String user = parts[1];
-                String pass = parts[2];
-                String pubKey = parts[3];
-
-                if (authManager.registerUser(user, pass, pubKey)) {
-                    writer.write("REGISTERED\n");
-                    System.out.println("Registration successful!");
-                } else {
-                    writer.write("REGISTER_FAILED\n");
-                    System.out.println("Registration failed (user exists).");
-                }
-                writer.flush();
-            }
-
-            else if ("login".equalsIgnoreCase(command)) {
-                System.out.println("User is logging in");
-                String loginInfo = reader.readLine();
-
-                if (loginInfo == null) {
-                    System.out.println("Login info not received. Client might have disconnected.");
-                    break;
-                }
-
-                String[] parts = loginInfo.split(":", 3);
-                String user = parts[1];
-                String pass = parts[2];
-
-                if (authManager.loginUser(user, pass)) {
-                    String token = sessionManager.createSession(user);
-                    this.username = user;
-                    ONLINE_USERS.put(user, this);
-                    String pubKeyString = getUserPublicKey(username);
-                    PublicKey clientPublicKey = KeyExchangeManager.createPublicKey(pubKeyString);
-
-                    String serverPublicKeyString = Base64.getEncoder().encodeToString(publicKey.getEncoded());
-
-                    // Cipher cipher = Cipher.getInstance("RSA");
-                    Cipher cipher = Cipher.getInstance("RSA/ECB/OAEPWithSHA-256AndMGF1Padding");
-                    cipher.init(Cipher.ENCRYPT_MODE, clientPublicKey);
-                    byte[] encryptedTokenBytes = cipher.doFinal(token.getBytes());
-                    String encryptedToken = Base64.getEncoder().encodeToString(encryptedTokenBytes);
-
-                    // writer.write("SUCCESS:" + encryptedToken + ":" + pubKeyString + "\n");
-                     writer.write("SUCCESS:" + encryptedToken + ":" + serverPublicKeyString + "\n");
-
-
-                    // String publicKeyString = Base64.getEncoder().encodeToString(publicKey.getEncoded());
-
-                    // writer.write("SUCCESS:" + token + ":" + publicKeyString + "\n");
-
-                    writer.flush();
-                    Logger.logEvent(clientSocket, user, "Login success. Token: " + token);
-                    System.out.println("User successfully logged in");
-
-                    new Thread(() -> sendConsoleMessages(writer, token)).start();
-
-                    String message;
-                   /* while ((message = reader.readLine()) != null && !message.equals("LOGOUT")) {
-                       boolean isSessionValid = sessionManager.isValidSession(username, message.split(":")[1]);
-                        if (!isSessionValid) {
-                            System.out.println("Session invalid");
-                            break;
-                        }*/
-                    while ((message = reader.readLine()) != null) {
-                        
-                        if (message.startsWith("AESKEY")) {
-                            System.out.println("AES key received ...");
-                            KeyExchangeManager keyExchangeManager = new KeyExchangeManager();
-                            SecretKey aesKey = keyExchangeManager.decryptAESKey(
-                                Base64.getDecoder().decode(message.split(":")[2].getBytes()), privateKey
-                            );
-                            sessionAESKeys.put(username, aesKey);
-                        } else if (message.startsWith("MSG")) {
-                            String decryptedMessage = readMessages(message);
-                            if (decryptedMessage == null) {
-                                // verification or freshness failed
-                                break;
-                            }
-                            if (decryptedMessage.equalsIgnoreCase("LOGOUT")) {
-                                System.out.println("User requested logout.");
-                                writer.write("LOGGED_OUT\n");
-                                writer.flush();
-
-                                sessionManager.invalidateSession(username);
-                                ONLINE_USERS.remove(username);
-                                Logger.logEvent(clientSocket, username, "User logged out.");
-                                break;
-                            }
-                        }
-
-                        System.out.println("Session valid");
-                    }
-                } else {
-                    writer.write("FAILED\n");
-                    writer.flush();
-                    Logger.logEvent(clientSocket, user, "Login failed.");
-                }
-            }
+        if (!authManager.loginUser(loginInfoParts[1],loginInfoParts[2])) {
+            out.write("FAILED\n"); 
+            out.flush(); 
+            Logger.logEvent(clientSocket, user, "Login failed.");
+            return;
         }
 
-    } catch (IOException | NoSuchPaddingException | IllegalBlockSizeException | NoSuchAlgorithmException |
-             BadPaddingException | InvalidKeyException | InvalidAlgorithmParameterException |
-             SignatureException | InvalidKeySpecException e) {
-        e.printStackTrace();
-    } finally {
+        user = loginInfoParts[1];
+        ONLINE_USERS.put(user,this);
+
+        String token = sessionManager.createSession(user);
+
+        PublicKey clientPublicKey = KeyExchangeManager.createPublicKey(authManager.getPublicKey(user));
+        Cipher cipher = Cipher.getInstance("RSA/ECB/OAEPWithSHA-256AndMGF1Padding");
+        cipher.init(Cipher.ENCRYPT_MODE, clientPublicKey);
+        String encryptedToken = Base64.getEncoder().encodeToString(cipher.doFinal(token.getBytes()));
+
+        out.write("SUCCESS:" + encryptedToken + ":" + Base64.getEncoder().encodeToString(publicKey.getEncoded()) + "\n");
+        out.flush();
+
+        Logger.logEvent(clientSocket, user, "Login success. Encrypted token: " + encryptedToken);
+        System.out.println("User successfully logged in");
+    }
+
+    private void handleECDH(String msg) throws Exception {
+        String[] ecdhInfoParts = msg.split(":",4);
+
+        if (!sessionManager.isValidSession(user, ecdhInfoParts[1])) { return; }
+
+        String ecdhClientPublicKeyString = ecdhInfoParts[2];
+        String ecdhClientPublicKeySign   = ecdhInfoParts[3];
+
+        PublicKey clientRsaPublicKey = KeyExchangeManager.createPublicKey(authManager.getPublicKey(user));
+
+        if (!CryptoUtils.verify(ecdhClientPublicKeyString,Base64.getDecoder().decode(ecdhClientPublicKeySign),clientRsaPublicKey)) {
+            System.out.println("Bad ECDH signature from " + user);
+            return;
+        }
+
+        KeyFactory kf = KeyFactory.getInstance("EC");
+        PublicKey clientEpPub = kf.generatePublic(new X509EncodedKeySpec(Base64.getDecoder().decode(ecdhClientPublicKeyString)));
+
+        KeyPair serverEpPair = ECDHUtils.generate();
+        SecretKey aes = ECDHUtils.derive(serverEpPair.getPrivate(), clientEpPub);
+        sessionAESKeys.put(user, aes);
+
+        String serverPubB64 = Base64.getEncoder().encodeToString(serverEpPair.getPublic().getEncoded());
+        String serverSigB64 = Base64.getEncoder().encodeToString(CryptoUtils.sign(serverPubB64, privateKey));
+
+        out.write("ECDH_RESP:" + ecdhInfoParts[1] + ":" + serverPubB64 + ":" + serverSigB64 + "\n");
+        out.flush();
+
+        System.out.println("ECDH handshake complete with " + user);
+    }
+
+     private void handleMsg(String frame) throws Exception {
+        String[] messageInfoParts = frame.split(":", 7);
+        String tok = messageInfoParts[1];
+        if (!sessionManager.isValidSession(user, tok)) return;
+
+        SecretKey aes = sessionAESKeys.get(user);
+        if (aes == null) {
+            System.out.println("AES key missing for " + user);
+            return;
+        }
+        
+        String nonce = messageInfoParts[5];
+        long timestamp;
         try {
-            if (username != null) {
-                sessionManager.invalidateSession(username);
-                ONLINE_USERS.remove(username);
-                Logger.logEvent(clientSocket, username, "Logged out.");
+            timestamp = Long.parseLong(messageInfoParts[6]);
+        } catch (NumberFormatException e) {
+            System.out.println("Invalid timestamp: " + messageInfoParts[6]);
+            return;
+        }
+
+        boolean isFresh = NonceAndTimestampManager.isFresh(nonce, timestamp);
+        if (!isFresh) {
+            System.out.println("Invalid nonce/timestamp! Possible replay.");
+            return;
+        }
+
+        String plain = CryptoUtils.decrypt(messageInfoParts[2], aes,
+                            Base64.getDecoder().decode(messageInfoParts[3]));
+        System.out.println(user + " > " + plain);
+    }
+
+    public void sendSecure(String plain) throws Exception {
+        SecretKey aes = sessionAESKeys.get(user);
+        if (aes == null) { System.out.println("AES not ready for "+user); return; }
+
+        byte[] iv  = CryptoUtils.generateIV();
+        String enc = CryptoUtils.encrypt(plain, aes, iv);
+        String sig = Base64.getEncoder()
+                           .encodeToString(CryptoUtils.sign(plain, privateKey));
+
+        String token = sessionManager.getToken(user);
+
+        String frame = "MSG:" + token + ":" + enc + ":" +
+                       Base64.getEncoder().encodeToString(iv) + ":" + sig + ":" +
+                       NonceAndTimestampManager.generateNonce() + ":" +
+                       System.currentTimeMillis();
+
+        out.write(frame + "\n");
+        out.flush();
+    }
+
+      private void cleanup() {
+        try {
+            if (user != null) {
+                sessionManager.invalidateSession(user);
+                ONLINE_USERS.remove(user);
             }
             clientSocket.close();
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-    }
-}
-
-
-    private String readMessages(String secureMessage) throws InvalidAlgorithmParameterException, NoSuchPaddingException, IllegalBlockSizeException, NoSuchAlgorithmException, BadPaddingException, InvalidKeyException, SignatureException, IOException, InvalidKeySpecException {
-        String decryptedMessage = CryptoUtils.decrypt(secureMessage.split(":")[2], sessionAESKeys.get(username), Base64.getDecoder().decode(secureMessage.split(":")[3]));
-        String userPubKey;
-
-        try (BufferedReader br = new BufferedReader(new FileReader(USER_FILE))) {
-            String line;
-            while ((line = br.readLine()) != null) {
-                String[] parts = line.split(":", 4);
-                if (parts[0].equals(username)) {
-                    userPubKey = parts[3];
-                    boolean isVerified = CryptoUtils.verify(decryptedMessage, Base64.getDecoder().decode(secureMessage.split(":")[4]), KeyExchangeManager.createPublicKey(userPubKey));
-                    if(!isVerified){
-                        System.out.printf("Could not verify sender");
-                        return null;
-                    }
-                    break;
-                }
-            }
-
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-
-
-        boolean isNonceAndTimestampValid = NonceAndTimestampManager.isFresh(secureMessage.split(":")[5], Long.parseLong(secureMessage.split(":")[6]));
-        if(!isNonceAndTimestampValid){
-            System.out.println("Invalid Nonce or Timestamp");
-            return null;
-        }
-
-        System.out.println(username + " : Decrypted Message " + decryptedMessage);
-        return decryptedMessage;
+        } catch (IOException ignored) {}
     }
 
-    private String getUserPublicKey(String username) {
-        try (BufferedReader br = new BufferedReader(new FileReader("users.txt"))) {
-            String line;
-            while ((line = br.readLine()) != null) {
-                String[] parts = line.split(":", 4); 
-                if (parts.length == 4 && parts[0].equals(username)) {
-                    return parts[3];
-                }
-            }
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-        return null; 
+    public static ClientHandler getOnline(String user) {
+        return ONLINE_USERS.get(user);
     }
 
-    private void sendConsoleMessages(BufferedWriter writer, String token) {
-        try (BufferedReader console = new BufferedReader(new InputStreamReader(System.in))) {
-            String plain;
-            while (true){
-                 System.out.print("You(server): ");
-                plain = console.readLine();
+    public void handleLogout(){
+        try {
+        System.out.println("User requested logout.");
+        out.write("LOGGED_OUT\n");
+        out.flush();
 
-                if (plain == null) break; 
-
-                SecretKey aesKey = sessionAESKeys.get(username);
-                if (aesKey == null) { System.out.println("AES key not ready."); continue; }
-
-                byte[] iv = CryptoUtils.generateIV();
-                String enc = CryptoUtils.encrypt(plain, aesKey, iv);
-                String sig = Base64.getEncoder().encodeToString(CryptoUtils.sign(plain, privateKey));
-
-                String secure = "MSG:" + token + ":" + enc + ":" +
-                        Base64.getEncoder().encodeToString(iv) + ":" + sig + ":" +
-                        NonceAndTimestampManager.generateNonce() + ":" + System.currentTimeMillis();
-
-                writer.write(secure + "\n");
-                writer.flush();
-            }
-        } catch (Exception e) { System.out.println("Console‑send stopped: " + e); }
+        sessionManager.invalidateSession(user);
+        ONLINE_USERS.remove(user);
+        Logger.logEvent(clientSocket, user, "User logged out.");
+    } catch (IOException e) {
+        System.out.println("Logout failed: " + e.getMessage());
     }
-
+    }
 
 }
