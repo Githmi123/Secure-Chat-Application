@@ -61,7 +61,7 @@ public class client {
 
 			System.out.print("Enter Username: ");
 			String username = scanner.nextLine();
-			AuthHandler.setUsername(username);
+			// AuthHandler.setUsername(username);
 
 			PersistentKeyPair persistentKeyPair = new PersistentKeyPair(username);
 			KeyPair keyPair = persistentKeyPair.loadOrCreate();
