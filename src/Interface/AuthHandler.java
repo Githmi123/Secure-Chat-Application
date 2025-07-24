@@ -79,7 +79,7 @@ public class AuthHandler {
     }
 
  public static void logout(PrintWriter out) {
-	    out.println("logout");
+	    out.println("LOGOUT");
 	    out.flush();
 	    System.out.println("You have been logged out.");
 	    // setUsername(null); // clear static username

@@ -218,13 +218,15 @@ public class ClientHandler implements Runnable {
 
     public void handleLogout(){
         try {
-        System.out.println("User requested logout.");
+        //System.out.println("User requested logout.");
+        System.out.println("User <"+user+"> Logged out");
         out.write("LOGGED_OUT\n");
         out.flush();
 
         sessionManager.invalidateSession(user);
         ONLINE_USERS.remove(user);
         Logger.logEvent(clientSocket, user, "User logged out.");
+         
     } catch (IOException e) {
         System.out.println("Logout failed: " + e.getMessage());
     }

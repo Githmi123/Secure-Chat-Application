@@ -32,7 +32,8 @@ public class MessageSender {
 		                        Long.toString(System.currentTimeMillis());
 
 		                out.println(secureMessage); 
-		                System.out.println("Logout message sent. Exiting...");
+		                System.out.println("Logging out...");
+		                 
 		                break; 
 		            } catch (Exception e) {
 		                System.err.println("Error during logout: " + e.getMessage());
