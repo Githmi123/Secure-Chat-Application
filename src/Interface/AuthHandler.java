@@ -7,7 +7,6 @@ import java.io.IOException;
 import java.io.PrintWriter;
 import java.security.KeyPair;
 import java.security.NoSuchAlgorithmException;
-import java.security.PublicKey;
 import java.security.spec.InvalidKeySpecException;
 import java.util.Base64;
 import java.util.Scanner;
@@ -40,11 +39,11 @@ public class AuthHandler {
 			return null;
 }
 
- public static String register(Scanner scanner, PrintWriter out, BufferedReader in) throws IOException, NoSuchAlgorithmException, InvalidKeySpecException {
+ public static String register(String username,Scanner scanner, PrintWriter out, BufferedReader in) throws IOException, NoSuchAlgorithmException, InvalidKeySpecException {
         out.println("register");
 
-        System.out.print("Username: ");
-        username = scanner.nextLine();
+        // System.out.print("Username: ");
+        // username = scanner.nextLine();
         System.out.print("Password: ");
         String password = scanner.nextLine();
 

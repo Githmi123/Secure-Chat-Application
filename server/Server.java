@@ -1,6 +1,5 @@
 package server;
 
-import crypto.KeyManager;
 import crypto.PersistentKeyPair;
 
 import java.io.IOException;
@@ -11,6 +10,8 @@ import java.security.NoSuchAlgorithmException;
 import java.security.PrivateKey;
 import java.security.PublicKey;
 import java.security.spec.InvalidKeySpecException;
+import java.util.Scanner;
+import java.util.Set;
 
 public class Server {
     private static final int PORT = 5000;
@@ -25,6 +26,7 @@ public class Server {
         PrivateKey privateKey = keyPair.getPrivate();
         PublicKey publicKey = keyPair.getPublic();
 
+        startConsoleDispatcher(sessionManager);
 
         try (ServerSocket serverSocket = new ServerSocket(PORT)) {
             System.out.println("Server started on port " + PORT);
@@ -37,5 +39,57 @@ public class Server {
         } catch (IOException e) {
             e.printStackTrace();
         }
+    }
+
+     private static void startConsoleDispatcher(SessionManager sessionManager) {
+        new Thread(() -> {
+            Scanner sc = new Scanner(System.in);
+            while (true) {
+                String line = sc.nextLine().trim();
+                if (line.isBlank()) continue;
+
+                if (line.startsWith("broadcast ")) {
+                    String msg = line.substring("broadcast ".length());
+                    Set<String> onlineUsers = sessionManager.getOnlineUsers();
+                    for (String user : onlineUsers) {
+                        ClientHandler client = ClientHandler.getOnline(user);
+                        if (client != null) {
+                            try {
+                                client.sendSecure(msg);
+                            } catch (Exception e) {
+                                e.printStackTrace();
+                            }
+                        }
+                    }
+                    continue;
+                }
+
+                if (line.startsWith("@")) {
+                    int spaceIndex = line.indexOf(' ');
+                    if (spaceIndex < 0) {
+                        System.out.println("Syntax: @username message");
+                        continue;
+                    }
+
+                    String user = line.substring(1, spaceIndex);
+                    String msg = line.substring(spaceIndex + 1);
+
+                    ClientHandler client = ClientHandler.getOnline(user);
+                    if (client == null) {
+                        System.out.println(user + " is not online.");
+                        continue;
+                    }
+
+                    try {
+                        client.sendSecure(msg);
+                    } catch (Exception e) {
+                        e.printStackTrace();
+                    }
+                    continue;
+                }
+
+                System.out.println("Unknown command. Use '@username message' or 'broadcast message'");
+            }
+        }).start();
     }
 }

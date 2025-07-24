@@ -26,6 +26,7 @@ public class UserAuthManager {
     public boolean registerUser(String username, String password, String publicKey) {
         try (BufferedWriter writer = new BufferedWriter(new FileWriter("users.txt", true))) {
         if (userExists(username)) {
+            System.out.println("User exists : error");
             return false;
         }
 

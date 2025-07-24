@@ -23,4 +23,6 @@ public class SessionManager {
     public Set<String> getOnlineUsers() {
         return sessionTokens.keySet();
     }
+
+    public String getToken(String user) { return sessionTokens.get(user); }
 }

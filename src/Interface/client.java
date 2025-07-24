@@ -1,6 +1,7 @@
 package src.Interface;
 
 import crypto.CryptoUtils;
+import crypto.ECDHUtils;
 import crypto.KeyExchangeManager;
 import crypto.PersistentKeyPair;
 
@@ -17,6 +18,7 @@ import java.net.InetAddress;
 import java.net.Socket;
 import java.security.*;
 import java.security.spec.InvalidKeySpecException;
+import java.security.spec.X509EncodedKeySpec;
 import java.util.Base64;
 import java.util.Scanner;
 
@@ -29,7 +31,7 @@ public class client {
 
    private static SecretKey aesKey;
    
-   public static void main (String[] args) throws IOException, SignatureException {
+   public static void main (String[] args) throws Exception {
 	   InetAddress ipAddress =InetAddress.getLocalHost();
    
 	   try (	 
@@ -62,7 +64,7 @@ public class client {
 				response = AuthHandler.login(username, scanner, out, in);
 			} else if (choice == 2) {
 				// response = AuthHandler.register(username, scanner, out, in, publicKey);
-				 response = AuthHandler.register(scanner, out, in);
+				 response = AuthHandler.register(username, scanner, out, in);
 			}
 
 			if (response != null && response.startsWith("SUCCESS")) {
@@ -80,7 +82,13 @@ public class client {
 
 		   }
 		   
-		   System.out.println("Authentication Completed ");	   
+		   System.out.println("Authentication Completed ");	  
+		   
+		   performECDHHandshake(token, in, out);
+
+           System.out.println("Handshake OK - secure channel up.");
+			
+		
 		   Thread receiver =new Thread (new MessageReceiver(in));
 		   receiver.start();
 
@@ -97,7 +105,8 @@ public class client {
    }
 
 	private static void messageSend(Scanner scanner, PrintWriter out, String token) throws NoSuchAlgorithmException, InvalidKeySpecException, NoSuchPaddingException, IllegalBlockSizeException, BadPaddingException, InvalidKeyException, InvalidAlgorithmParameterException, SignatureException {
-		aesKey = CryptoUtils.generateAESKey();
+		// aesKey = CryptoUtils.generateAESKey();
+		System.out.println("The AES key now: "+ aesKey);
 		KeyExchangeManager keyExchangeManager = new KeyExchangeManager();
 		byte[] encryptedAESKey = keyExchangeManager.encryptAESKey(aesKey, keyExchangeManager.createPublicKey(serverPubKey));
 		String message = "AESKEY:" + token + ":" + Base64.getEncoder().encodeToString(encryptedAESKey);
@@ -113,4 +122,35 @@ public class client {
 	public static String getServerPubKey() {
 		return serverPubKey;
 	}
+
+	private static void performECDHHandshake(String token,BufferedReader in, PrintWriter  out) throws Exception {
+        KeyPair ecdhPair = ECDHUtils.generate();
+        String ecdhPubKeyString  = Base64.getEncoder().encodeToString(ecdhPair.getPublic().getEncoded());
+        String ecdhPubKeySign = Base64.getEncoder().encodeToString(CryptoUtils.sign(ecdhPubKeyString, privateKey));
+
+        out.println("ECDH_INIT:" + token + ":" + ecdhPubKeyString + ":" + ecdhPubKeySign);
+        out.flush();
+
+        String resp = in.readLine();
+        if (resp == null || !resp.startsWith("ECDH_RESP")) {
+            throw new IOException("Handshake failed – bad response");
+        }
+        String[] parts = resp.split(":", 4); 
+        String serverPubB64 = parts[2];
+        String serverSigB64 = parts[3];
+
+        PublicKey serverLongRSA =
+                KeyExchangeManager.createPublicKey(serverPubKey);
+        boolean ok = CryptoUtils.verify(serverPubB64,
+                                        Base64.getDecoder().decode(serverSigB64),
+                                        serverLongRSA);
+        if (!ok) throw new SecurityException("Server ECDH signature invalid");
+
+        KeyFactory kf = KeyFactory.getInstance("EC");
+        PublicKey serverECDHPub = kf.generatePublic(
+                new X509EncodedKeySpec(Base64.getDecoder().decode(serverPubB64)));
+
+        aesKey = ECDHUtils.derive(ecdhPair.getPrivate(), serverECDHPub);
+    }
+
 }
