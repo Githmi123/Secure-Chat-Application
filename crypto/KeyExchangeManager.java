@@ -2,6 +2,8 @@ package crypto;
 
 import javax.crypto.*;
 import javax.crypto.spec.SecretKeySpec;
+
+import java.nio.charset.StandardCharsets;
 import java.security.*;
 import java.security.spec.InvalidKeySpecException;
 import java.security.spec.PKCS8EncodedKeySpec;
@@ -37,5 +39,29 @@ public class KeyExchangeManager {
         PKCS8EncodedKeySpec spec = new PKCS8EncodedKeySpec(keyBytes);
         KeyFactory keyFactory = KeyFactory.getInstance("RSA");
         return keyFactory.generatePrivate(spec);
+    }
+    
+    public static String encryptPassword(String password, PublicKey publicKey) {
+        try {
+            Cipher cipher = Cipher.getInstance("RSA/ECB/OAEPWithSHA-256AndMGF1Padding");
+            cipher.init(Cipher.ENCRYPT_MODE, publicKey);
+            byte[] encryptedBytes = cipher.doFinal(password.getBytes(StandardCharsets.UTF_8));
+            return Base64.getEncoder().encodeToString(encryptedBytes);
+        } catch (Exception e) {
+            throw new RuntimeException("Error encrypting password", e);
+        }
+    }
+
+    // Decrypt password with RSA private key
+    public static String decryptPassword(String encryptedPasswordBase64, PrivateKey privateKey) {
+        try {
+            Cipher cipher = Cipher.getInstance("RSA/ECB/OAEPWithSHA-256AndMGF1Padding");
+            cipher.init(Cipher.DECRYPT_MODE, privateKey);
+            byte[] encryptedBytes = Base64.getDecoder().decode(encryptedPasswordBase64);
+            byte[] decryptedBytes = cipher.doFinal(encryptedBytes);
+            return new String(decryptedBytes, StandardCharsets.UTF_8);
+        } catch (Exception e) {
+            throw new RuntimeException("Error decrypting password", e);
+        }
     }
 }

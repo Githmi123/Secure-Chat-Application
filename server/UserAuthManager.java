@@ -3,14 +3,21 @@ package server;
 import java.io.*;
 import java.nio.charset.StandardCharsets;
 import java.util.*;
+
+import crypto.KeyExchangeManager;
+
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
+import java.security.PrivateKey;
 import java.security.SecureRandom;
 
 public class UserAuthManager {
     private static final String USER_FILE = "users.txt";
-
-    public UserAuthManager(){
+    private final PrivateKey privateKey;
+    
+    public UserAuthManager(PrivateKey privateKey){
+    	this.privateKey = privateKey;
+    	
         try{
             File file = new File(USER_FILE);
             if(!file.exists()){
@@ -23,14 +30,15 @@ public class UserAuthManager {
         }
     }
 
-    public boolean registerUser(String username, String password, String publicKey) {
-        try (BufferedWriter writer = new BufferedWriter(new FileWriter("users.txt", true))) {
+    public boolean registerUser(String username, String encryptedPasswordBase64, String publicKey) {
+    	String decryptedPassword = KeyExchangeManager.decryptPassword(encryptedPasswordBase64, privateKey);
+    	try (BufferedWriter writer = new BufferedWriter(new FileWriter("users.txt", true))) {
         if (userExists(username)) {
             return false;
         }
 
         byte[] salt = generateSalt();
-        String hashedPassword = hashPassword(password, salt);
+        String hashedPassword = hashPassword(decryptedPassword, salt);
         String encodedSalt = Base64.getEncoder().encodeToString(salt);
         writer.write(username + ":" + hashedPassword + ":" + encodedSalt + ":" + publicKey);
         writer.newLine();
@@ -43,20 +51,23 @@ public class UserAuthManager {
         return false;
     }
 
-    public boolean loginUser(String username, String password) throws NoSuchAlgorithmException {
-        try (BufferedReader br = new BufferedReader(new FileReader(USER_FILE))) {
+    public boolean loginUser(String username, String encryptedPasswordBase64) throws NoSuchAlgorithmException {
+        try {
+            String decryptedPassword = KeyExchangeManager.decryptPassword(encryptedPasswordBase64, privateKey);
+
+    	try (BufferedReader br = new BufferedReader(new FileReader(USER_FILE))) {
             String line;
             while ((line = br.readLine()) != null) {
                 String[] parts = line.split(":", 4);
                 if (parts[0].equals(username)) {
                     String storedHash = parts[1];
                     byte[] salt = Base64.getDecoder().decode(parts[2]);
-                    String hashedInput = hashPassword(password, salt);
+                    String hashedInput = hashPassword(decryptedPassword, salt);
                     return storedHash.equals(hashedInput);
                 }
             }
             System.out.println("Finished login");
-
+    	}
         } catch (IOException e) {
             e.printStackTrace();
         }

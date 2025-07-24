@@ -1,5 +1,6 @@
 package src.Interface;
 
+import crypto.KeyExchangeManager;
 import crypto.PersistentKeyPair;
 
 import java.io.BufferedReader;
@@ -15,15 +16,22 @@ import java.util.Scanner;
 public class AuthHandler {
 
 	private static String username;
+	private static PublicKey serverPublicKey;
 
+	public static void setServerPublicKey(PublicKey key) {
+	        serverPublicKey = key;
+	}
+ 	
 	public static String login(String username, Scanner scanner, PrintWriter out, BufferedReader in) throws IOException {
 			out.println("login");
-
+			AuthHandler.setUsername(username);
+	        
 			System.out.print("Password:");
 			String password = scanner.nextLine();
 
-			out.println("LOGIN:" + username + ":" + password);
-			out.flush();
+			String encryptedPassword = KeyExchangeManager.encryptPassword(password, serverPublicKey);
+			out.println("LOGIN:" + username + ":" + encryptedPassword);
+            out.flush();
 
 			String response = in.readLine();
 			if (response == null || response.isBlank() || response.startsWith("FAILED")) {
@@ -43,17 +51,21 @@ public class AuthHandler {
  public static String register(Scanner scanner, PrintWriter out, BufferedReader in) throws IOException, NoSuchAlgorithmException, InvalidKeySpecException {
         out.println("register");
 
-        System.out.print("Username: ");
-        username = scanner.nextLine();
+        //System.out.print("Enter Username: ");
+        //username = scanner.nextLine();
+        AuthHandler.setUsername(username);
         System.out.print("Password: ");
         String password = scanner.nextLine();
 
+        
+        
         PersistentKeyPair persistentKeyPair = new PersistentKeyPair(username);
         KeyPair keyPair = persistentKeyPair.loadOrCreate();
 
         String encodedPubKey = Base64.getEncoder().encodeToString(keyPair.getPublic().getEncoded());
+		String encryptedPassword = KeyExchangeManager.encryptPassword(password, serverPublicKey);
 
-        String registerMessage = "REGISTER:" + username + ":" + password + ":" + encodedPubKey;
+        String registerMessage = "REGISTER:" + username + ":" + encryptedPassword + ":" + encodedPubKey;
         out.println(registerMessage);
         out.flush();
 
@@ -62,11 +74,18 @@ public class AuthHandler {
             System.out.println("Registration successful. Please login.");
             return login(username, scanner, out, in);
         } else {
-            System.out.println("Registration failed!");
+            System.out.println("Registration failed! Username already taken.");
             return null;
         }
     }
 
+ public static void logout(PrintWriter out) {
+	    out.println("logout");
+	    out.flush();
+	    System.out.println("You have been logged out.");
+	    setUsername(null); // clear static username
+	}
+ 
 	public static String getUsername(){
 		return username;
 	}

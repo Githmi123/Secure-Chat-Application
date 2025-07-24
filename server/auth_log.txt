@@ -1,7 +1,0 @@
-[] Kalangi logged in.
-[] Kalangi logged out.
-[Sun Jun 29 19:02:21 IST 2025] [IP: 127.0.0.1] [User: Kalangi] Login success. Token: 1a8585e0-6a07-4693-92b5-26af89f63a5a HASH=046e3a953403603ef66ac665ec5163f9562ed6338bbbb6f77cfbcd43e336da2a
-[Sun Jun 29 19:02:21 IST 2025] [IP: 127.0.0.1] [User: Kalangi] Logged out. HASH=1dabe443d01f3829a9a0cccc83c70eda10ec11143e30fd3047bca7feb2f07702
-[Sun Jun 29 19:04:07 IST 2025] [IP: 127.0.0.1] [User: Kalangi1] Login failed. HASH=b53b6e7bd71180dc0d00910cea6e2a6c80859fb181fc2e634d3fadcec933cfa7
-[Sun Jun 29 19:07:25 IST 2025] [IP: 127.0.0.1] [User: Kala2] Login success. Token: 0f64fa35-c971-454b-8612-d30f887f6440 HASH=86635a5080af14929bbe5f2c2bbe8cf42e27371960d4946744f7804a2b858eee
-[Sun Jun 29 19:07:25 IST 2025] [IP: 127.0.0.1] [User: Kala2] Logged out. HASH=6d3ffc037751d5a5fe05c1fd20e2f548728b247effaf8e5faee0f304fdc942ef

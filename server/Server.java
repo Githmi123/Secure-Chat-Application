@@ -16,7 +16,7 @@ public class Server {
     private static final int PORT = 5000;
 
     public static void main(String[] args) throws NoSuchAlgorithmException, IOException, InvalidKeySpecException {
-        UserAuthManager authManager = new UserAuthManager();
+       //UserAuthManager authManager = new UserAuthManager();
         SessionManager sessionManager = new SessionManager();
 
         // Create the pub-priv keypair only at deployment
@@ -25,7 +25,8 @@ public class Server {
         PrivateKey privateKey = keyPair.getPrivate();
         PublicKey publicKey = keyPair.getPublic();
 
-
+        UserAuthManager authManager = new UserAuthManager(privateKey);
+        
         try (ServerSocket serverSocket = new ServerSocket(PORT)) {
             System.out.println("Server started on port " + PORT);
 

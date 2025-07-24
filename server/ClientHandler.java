@@ -47,7 +47,10 @@ public void run() {
         BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(clientSocket.getOutputStream()))
     ) {
         System.out.println("New thread created for client");
-
+        String serverPublicKeyString1 = Base64.getEncoder().encodeToString(publicKey.getEncoded());
+        writer.write("SERVER PUBLIC KEY:" + serverPublicKeyString1 + "\n");
+        writer.flush();
+        
         String command;
         while ((command = reader.readLine()) != null) {
 
@@ -112,13 +115,14 @@ public void run() {
                     new Thread(() -> sendConsoleMessages(writer, token)).start();
 
                     String message;
-                    while ((message = reader.readLine()) != null && !message.equals("LOGOUT")) {
-                        boolean isSessionValid = sessionManager.isValidSession(username, message.split(":")[1]);
+                   /* while ((message = reader.readLine()) != null && !message.equals("LOGOUT")) {
+                       boolean isSessionValid = sessionManager.isValidSession(username, message.split(":")[1]);
                         if (!isSessionValid) {
                             System.out.println("Session invalid");
                             break;
-                        }
-
+                        }*/
+                    while ((message = reader.readLine()) != null) {
+                        
                         if (message.startsWith("AESKEY")) {
                             System.out.println("AES key received ...");
                             KeyExchangeManager keyExchangeManager = new KeyExchangeManager();
@@ -127,7 +131,19 @@ public void run() {
                             );
                             sessionAESKeys.put(username, aesKey);
                         } else if (message.startsWith("MSG")) {
-                            if (!readMessages(message)) {
+                            String decryptedMessage = readMessages(message);
+                            if (decryptedMessage == null) {
+                                // verification or freshness failed
+                                break;
+                            }
+                            if (decryptedMessage.equalsIgnoreCase("LOGOUT")) {
+                                System.out.println("User requested logout.");
+                                writer.write("LOGGED_OUT\n");
+                                writer.flush();
+
+                                sessionManager.invalidateSession(username);
+                                ONLINE_USERS.remove(username);
+                                Logger.logEvent(clientSocket, username, "User logged out.");
                                 break;
                             }
                         }
@@ -139,11 +155,6 @@ public void run() {
                     writer.flush();
                     Logger.logEvent(clientSocket, user, "Login failed.");
                 }
-            }
-
-            else if ("LOGOUT".equalsIgnoreCase(command)) {
-                System.out.println("Client requested logout.");
-                break;
             }
         }
 
@@ -166,7 +177,7 @@ public void run() {
 }
 
 
-    private boolean readMessages(String secureMessage) throws InvalidAlgorithmParameterException, NoSuchPaddingException, IllegalBlockSizeException, NoSuchAlgorithmException, BadPaddingException, InvalidKeyException, SignatureException, IOException, InvalidKeySpecException {
+    private String readMessages(String secureMessage) throws InvalidAlgorithmParameterException, NoSuchPaddingException, IllegalBlockSizeException, NoSuchAlgorithmException, BadPaddingException, InvalidKeyException, SignatureException, IOException, InvalidKeySpecException {
         String decryptedMessage = CryptoUtils.decrypt(secureMessage.split(":")[2], sessionAESKeys.get(username), Base64.getDecoder().decode(secureMessage.split(":")[3]));
         String userPubKey;
 
@@ -179,7 +190,7 @@ public void run() {
                     boolean isVerified = CryptoUtils.verify(decryptedMessage, Base64.getDecoder().decode(secureMessage.split(":")[4]), KeyExchangeManager.createPublicKey(userPubKey));
                     if(!isVerified){
                         System.out.printf("Could not verify sender");
-                        return false;
+                        return null;
                     }
                     break;
                 }
@@ -193,11 +204,11 @@ public void run() {
         boolean isNonceAndTimestampValid = NonceAndTimestampManager.isFresh(secureMessage.split(":")[5], Long.parseLong(secureMessage.split(":")[6]));
         if(!isNonceAndTimestampValid){
             System.out.println("Invalid Nonce or Timestamp");
-            return false;
+            return null;
         }
 
         System.out.println(username + " : Decrypted Message " + decryptedMessage);
-        return true;
+        return decryptedMessage;
     }
 
     private String getUserPublicKey(String username) {

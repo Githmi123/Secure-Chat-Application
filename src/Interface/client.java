@@ -17,6 +17,7 @@ import java.net.InetAddress;
 import java.net.Socket;
 import java.security.*;
 import java.security.spec.InvalidKeySpecException;
+import java.security.spec.X509EncodedKeySpec;
 import java.util.Base64;
 import java.util.Scanner;
 
@@ -41,6 +42,15 @@ public class client {
 
 		   System.out.println("Connected to Secure Chat Server");
 		   
+		   String line = in.readLine();
+		   if (line.startsWith("SERVER PUBLIC KEY:")) {
+			   String serverPublicKeyBase64 = line.split(":", 2)[1];
+			   PublicKey serverPublicKey = KeyExchangeManager.createPublicKey(serverPublicKeyBase64);
+			   AuthHandler.setServerPublicKey(serverPublicKey);
+			   serverPubKey = serverPublicKeyBase64;
+			   System.out.println("SERVER PUBLIC KEY: " + serverPublicKeyBase64);
+		   }
+		   
 		   String token=null;
 		   while (token==null) {
 			System.out.println("1.Login");
@@ -48,9 +58,9 @@ public class client {
 			System.out.print("Enter Option:");
 			int choice = Integer.parseInt(scanner.nextLine());
 
-			System.out.print("Enter username: ");
+			System.out.print("Enter Username: ");
 			String username = scanner.nextLine();
-			AuthHandler.setUsername(username); 
+			AuthHandler.setUsername(username);
 
 			PersistentKeyPair persistentKeyPair = new PersistentKeyPair(username);
 			KeyPair keyPair = persistentKeyPair.loadOrCreate();

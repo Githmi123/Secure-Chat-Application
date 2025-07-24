@@ -19,6 +19,27 @@ public class MessageSender {
 		while (true) {
 			System.out.print("You(client): ");
 			String plainText = scanner.nextLine();
+			
+			 if (plainText.equalsIgnoreCase("LOGOUT")) {
+		            try {
+		                byte[] iv = CryptoUtils.generateIV();
+		                String encryptedMessage = CryptoUtils.encrypt("LOGOUT", aesKey, iv);
+		                String signature = Base64.getEncoder().encodeToString(CryptoUtils.sign("LOGOUT", privateKey));
+		                String secureMessage = "MSG:" + token + ":" + encryptedMessage + ":" +
+		                        Base64.getEncoder().encodeToString(iv) + ":" +
+		                        signature + ":" +
+		                        NonceAndTimestampManager.generateNonce() + ":" +
+		                        Long.toString(System.currentTimeMillis());
+
+		                out.println(secureMessage); 
+		                System.out.println("Logout message sent. Exiting...");
+		                break; 
+		            } catch (Exception e) {
+		                System.err.println("Error during logout: " + e.getMessage());
+		                break;
+		            }
+		        }
+			 
 			byte[] iv = CryptoUtils.generateIV();
 			String encryptedMessage = CryptoUtils.encrypt(plainText, aesKey, iv);
 			String signature = Base64.getEncoder().encodeToString(CryptoUtils.sign(plainText, privateKey));
