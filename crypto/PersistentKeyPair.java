@@ -17,7 +17,7 @@ public class PersistentKeyPair {
 
 
     public PersistentKeyPair(String username){
-        KEYSTORE_PATH = "keys/" + username + "keystore.jks";
+        KEYSTORE_PATH = "keys/" + username + "_keystore.jks";
         this.username = username;
 
     }

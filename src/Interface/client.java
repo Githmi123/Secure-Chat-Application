@@ -49,7 +49,7 @@ public class client {
 			   PublicKey serverPublicKey = KeyExchangeManager.createPublicKey(serverPublicKeyBase64);
 			   AuthHandler.setServerPublicKey(serverPublicKey);
 			   serverPubKey = serverPublicKeyBase64;
-			   System.out.println("SERVER PUBLIC KEY: " + serverPublicKeyBase64);
+//			   System.out.println("SERVER PUBLIC KEY: " + serverPublicKeyBase64);
 		   }
 		   
 		   String token=null;
@@ -85,7 +85,7 @@ public class client {
                     cipher.init(Cipher.DECRYPT_MODE, privateKey);
                     byte[] decryptedTokenBytes = cipher.doFinal(Base64.getDecoder().decode(encryptedTokenBase64));
                     token = new String(decryptedTokenBytes);
-					System.out.println("Check the token : "+token);
+//					System.out.println("Check the token : "+token);
 			}
 
 		   }
@@ -113,7 +113,7 @@ public class client {
 
 	private static void messageSend(Scanner scanner, PrintWriter out, String token) throws NoSuchAlgorithmException, InvalidKeySpecException, NoSuchPaddingException, IllegalBlockSizeException, BadPaddingException, InvalidKeyException, InvalidAlgorithmParameterException, SignatureException {
 		// aesKey = CryptoUtils.generateAESKey();
-		System.out.println("The AES key now: "+ aesKey);
+//		System.out.println("The AES key now: "+ aesKey);
 		byte[] encryptedAESKey = KeyExchangeManager.encryptAESKey(aesKey, KeyExchangeManager.createPublicKey(serverPubKey));
 		String message = "AESKEY:" + token + ":" + Base64.getEncoder().encodeToString(encryptedAESKey);
 		out.println(message);
@@ -121,7 +121,7 @@ public class client {
 	}
 
 	public static SecretKey getAESKey() {
-		System.out.println("aes in clinet: " + aesKey);
+//		System.out.println("aes in clinet: " + aesKey);
 		return aesKey;
 	}
 
