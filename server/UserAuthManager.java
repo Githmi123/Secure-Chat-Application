@@ -89,7 +89,7 @@ public class UserAuthManager {
     }
 
     private boolean userExists(String username) {
-        System.out.println("Checking if user exists ...");
+//        System.out.println("Checking if user exists ...");
 
         try (BufferedReader br = new BufferedReader(new FileReader(USER_FILE))) {
             String line;

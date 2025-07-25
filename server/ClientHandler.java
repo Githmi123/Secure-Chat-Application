@@ -50,7 +50,7 @@ public class ClientHandler implements Runnable {
             in  = new BufferedReader(new InputStreamReader(clientSocket.getInputStream()));
             out = new BufferedWriter(new OutputStreamWriter(clientSocket.getOutputStream()));
 
-            System.out.println("New thread created for client");
+            System.out.println("\nNew thread created for client");
             String serverPublicKeyString1 = Base64.getEncoder().encodeToString(publicKey.getEncoded());
             out.write("SERVER PUBLIC KEY:" + serverPublicKeyString1 + "\n");
             out.flush();
@@ -76,13 +76,13 @@ public class ClientHandler implements Runnable {
             System.out.println("Registration successful!");
         }
         else{
-            System.out.println("Registration failed (user exists).");
+            System.out.println("Registration failed (user exists).\n");
         }
         out.flush();
     }
 
     private void handleLogin() throws Exception {
-        System.out.println("User is logging in");
+//        System.out.println("User is logging in");
         String loginInfo = in.readLine(); 
         
         if (loginInfo == null) {
@@ -113,7 +113,7 @@ public class ClientHandler implements Runnable {
         out.flush();
 
         Logger.logEvent(clientSocket, user, "Login success. Encrypted token: " + encryptedToken);
-        System.out.println("User successfully logged in");
+//        System.out.println("User successfully logged in");
     }
 
     private void handleECDH(String msg) throws Exception {
@@ -144,7 +144,7 @@ public class ClientHandler implements Runnable {
         out.write("ECDH_RESP:" + ecdhInfoParts[1] + ":" + serverPubB64 + ":" + serverSigB64 + "\n");
         out.flush();
 
-        System.out.println("ECDH handshake complete with " + user);
+        System.out.println("ECDH handshake complete with " + user + "\n");
     }
 
      private void handleMsg(String frame) throws Exception {

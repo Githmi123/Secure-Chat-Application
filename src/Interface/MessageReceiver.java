@@ -30,7 +30,7 @@ public class MessageReceiver implements Runnable {
                 long ts = Long.parseLong(parts[6]);
 
                 SecretKey aes = client.getAESKey();
-				System.out.println("AES in receiver: "+aes);
+//				System.out.println("AES in receiver: "+aes);
                 String serverPub = client.getServerPubKey();
 
                 if (aes == null || serverPub == null) {
@@ -49,6 +49,7 @@ public class MessageReceiver implements Runnable {
                 boolean fresh = NonceAndTimestampManager.isFresh(nonce, ts);
 
                 if (verifyServerSign && fresh) {
+                    System.out.print("\r");
                     System.out.println("Server: " + plainText);
                     System.out.println("You(client): ");
                 } else {
