@@ -6,23 +6,21 @@ import java.io.IOException;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.security.KeyPair;
-import java.security.NoSuchAlgorithmException;
 import java.security.PrivateKey;
 import java.security.PublicKey;
-import java.security.spec.InvalidKeySpecException;
 import java.util.Scanner;
 import java.util.Set;
 
 public class Server {
     private static final int PORT = 5000;
 
-    public static void main(String[] args) throws NoSuchAlgorithmException, IOException, InvalidKeySpecException {
+    public static void main(String[] args) throws Exception {
        //UserAuthManager authManager = new UserAuthManager();
         SessionManager sessionManager = new SessionManager();
 
         // Create the pub-priv keypair only at deployment
         PersistentKeyPair persistentKeyPair = new PersistentKeyPair("server");
-        KeyPair keyPair = persistentKeyPair.loadOrCreate();
+        KeyPair keyPair = persistentKeyPair.loadOrCreate("server".toCharArray());
         PrivateKey privateKey = keyPair.getPrivate();
         PublicKey publicKey = keyPair.getPublic();
 

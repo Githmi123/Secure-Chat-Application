@@ -50,6 +50,7 @@ public class MessageReceiver implements Runnable {
 
                 if (verifyServerSign && fresh) {
                     System.out.println("Server: " + plainText);
+                    System.out.println("You(client): ");
                 } else {
                     System.out.println("(Dropped tampered/expired message)");
                 }

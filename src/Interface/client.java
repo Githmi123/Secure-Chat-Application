@@ -61,19 +61,19 @@ public class client {
 
 			System.out.print("Enter Username: ");
 			String username = scanner.nextLine();
-			// AuthHandler.setUsername(username);
+			System.out.print("Password:");
+			String password = scanner.nextLine();
 
 			PersistentKeyPair persistentKeyPair = new PersistentKeyPair(username);
-			KeyPair keyPair = persistentKeyPair.loadOrCreate();
+			KeyPair keyPair = persistentKeyPair.loadOrCreate(password.toCharArray());
 			publicKey = keyPair.getPublic();
 			privateKey = keyPair.getPrivate();
 
 			String response = null;
 			if (choice == 1) {
-				response = AuthHandler.login(username, scanner, out, in);
+				response = AuthHandler.login(username, password, scanner, out, in);
 			} else if (choice == 2) {
-				// response = AuthHandler.register(username, scanner, out, in, publicKey);
-				 response = AuthHandler.register(username, scanner, out, in);
+				 response = AuthHandler.register(username, password, scanner, out, in);
 			}
 
 			if (response != null && response.startsWith("SUCCESS")) {
@@ -81,7 +81,6 @@ public class client {
                     String encryptedTokenBase64 = parts[1];
                     serverPubKey = parts[2];
 
-                    // Cipher cipher = Cipher.getInstance("RSA");
 					Cipher cipher = Cipher.getInstance("RSA/ECB/OAEPWithSHA-256AndMGF1Padding");
                     cipher.init(Cipher.DECRYPT_MODE, privateKey);
                     byte[] decryptedTokenBytes = cipher.doFinal(Base64.getDecoder().decode(encryptedTokenBase64));
@@ -106,9 +105,8 @@ public class client {
 	   } catch (IOException e) {
 		   System.err.println("Error:"+e.getMessage());
 	   } catch (NoSuchAlgorithmException | InvalidKeySpecException | NoSuchPaddingException |
-				IllegalBlockSizeException | BadPaddingException | InvalidKeyException e) {
-		   throw new RuntimeException(e);
-	   } catch (InvalidAlgorithmParameterException e) {
+				IllegalBlockSizeException | BadPaddingException | InvalidKeyException |
+				InvalidAlgorithmParameterException e) {
 		   throw new RuntimeException(e);
 	   }
    }
@@ -116,8 +114,7 @@ public class client {
 	private static void messageSend(Scanner scanner, PrintWriter out, String token) throws NoSuchAlgorithmException, InvalidKeySpecException, NoSuchPaddingException, IllegalBlockSizeException, BadPaddingException, InvalidKeyException, InvalidAlgorithmParameterException, SignatureException {
 		// aesKey = CryptoUtils.generateAESKey();
 		System.out.println("The AES key now: "+ aesKey);
-		KeyExchangeManager keyExchangeManager = new KeyExchangeManager();
-		byte[] encryptedAESKey = keyExchangeManager.encryptAESKey(aesKey, keyExchangeManager.createPublicKey(serverPubKey));
+		byte[] encryptedAESKey = KeyExchangeManager.encryptAESKey(aesKey, KeyExchangeManager.createPublicKey(serverPubKey));
 		String message = "AESKEY:" + token + ":" + Base64.getEncoder().encodeToString(encryptedAESKey);
 		out.println(message);
 		MessageSender.sendLoop(scanner, out, token, aesKey, privateKey);
