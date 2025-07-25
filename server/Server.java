@@ -48,22 +48,6 @@ public class Server {
                 String line = sc.nextLine().trim();
                 if (line.isBlank()) continue;
 
-                if (line.startsWith("broadcast ")) {
-                    String msg = line.substring("broadcast ".length());
-                    Set<String> onlineUsers = sessionManager.getOnlineUsers();
-                    for (String user : onlineUsers) {
-                        ClientHandler client = ClientHandler.getOnline(user);
-                        if (client != null) {
-                            try {
-                                client.sendSecure(msg);
-                            } catch (Exception e) {
-                                e.printStackTrace();
-                            }
-                        }
-                    }
-                    continue;
-                }
-
                 if (line.startsWith("@")) {
                     int spaceIndex = line.indexOf(' ');
                     if (spaceIndex < 0) {

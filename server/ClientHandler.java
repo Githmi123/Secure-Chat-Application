@@ -109,7 +109,7 @@ public class ClientHandler implements Runnable {
         cipher.init(Cipher.ENCRYPT_MODE, clientPublicKey);
         String encryptedToken = Base64.getEncoder().encodeToString(cipher.doFinal(token.getBytes()));
 
-        out.write("SUCCESS:" + encryptedToken + ":" + Base64.getEncoder().encodeToString(publicKey.getEncoded()) + "\n");
+        out.write("SUCCESS:" + encryptedToken + "\n");
         out.flush();
 
         Logger.logEvent(clientSocket, user, "Login success. Encrypted token: " + encryptedToken);
@@ -150,6 +150,7 @@ public class ClientHandler implements Runnable {
      private void handleMsg(String frame) throws Exception {
         String[] messageInfoParts = frame.split(":", 7);
         String tok = messageInfoParts[1];
+        // System.out.println("the user is : "+user);
         if (!sessionManager.isValidSession(user, tok)) return;
 
         SecretKey aes = sessionAESKeys.get(user);

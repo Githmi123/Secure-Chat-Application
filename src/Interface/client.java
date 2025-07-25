@@ -77,9 +77,9 @@ public class client {
 			}
 
 			if (response != null && response.startsWith("SUCCESS")) {
-				 String[] parts = response.split(":", 3);
+				 String[] parts = response.split(":", 2);
                     String encryptedTokenBase64 = parts[1];
-                    serverPubKey = parts[2];
+                    // serverPubKey = parts[2];
 
 					Cipher cipher = Cipher.getInstance("RSA/ECB/OAEPWithSHA-256AndMGF1Padding");
                     cipher.init(Cipher.DECRYPT_MODE, privateKey);
