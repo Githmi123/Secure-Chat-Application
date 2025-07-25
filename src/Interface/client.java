@@ -77,9 +77,9 @@ public class client {
 			}
 
 			if (response != null && response.startsWith("SUCCESS")) {
-				 String[] parts = response.split(":", 3);
+				 String[] parts = response.split(":", 2);
                     String encryptedTokenBase64 = parts[1];
-                    serverPubKey = parts[2];
+                    // serverPubKey = parts[2];
 
 					Cipher cipher = Cipher.getInstance("RSA/ECB/OAEPWithSHA-256AndMGF1Padding");
                     cipher.init(Cipher.DECRYPT_MODE, privateKey);
@@ -113,15 +113,15 @@ public class client {
 
 	private static void messageSend(Scanner scanner, PrintWriter out, String token) throws NoSuchAlgorithmException, InvalidKeySpecException, NoSuchPaddingException, IllegalBlockSizeException, BadPaddingException, InvalidKeyException, InvalidAlgorithmParameterException, SignatureException {
 		// aesKey = CryptoUtils.generateAESKey();
-		System.out.println("The AES key now: "+ aesKey);
-		byte[] encryptedAESKey = KeyExchangeManager.encryptAESKey(aesKey, KeyExchangeManager.createPublicKey(serverPubKey));
-		String message = "AESKEY:" + token + ":" + Base64.getEncoder().encodeToString(encryptedAESKey);
-		out.println(message);
+		// System.out.println("The AES key now: "+ aesKey);
+		// byte[] encryptedAESKey = KeyExchangeManager.encryptAESKey(aesKey, KeyExchangeManager.createPublicKey(serverPubKey));
+		// String message = "AESKEY:" + token + ":" + Base64.getEncoder().encodeToString(encryptedAESKey);
+		// out.println(message);
 		MessageSender.sendLoop(scanner, out, token, aesKey, privateKey);
 	}
 
 	public static SecretKey getAESKey() {
-		System.out.println("aes in clinet: " + aesKey);
+		// System.out.println("aes in clinet: " + aesKey);
 		return aesKey;
 	}
 
